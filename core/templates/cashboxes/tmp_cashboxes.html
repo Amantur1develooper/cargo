@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<form id="move-products-form" method="POST" action="{% url 'move_products_to_cashbox' %}">
+    {% csrf_token %}
+    <div class="row">
+        <!-- Список касс (теперь в модальном окне) -->
+        <div class="col-md-12">
+            <button type="button" class="btn btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#selectCashboxModal"
+                    id="move-selected-btn" disabled>
+                <i class="fas fa-exchange-alt"></i> Переместить выбранное
+            </button>
+            
+            <div class="card">
+                <div class="card-header bg-success text-white d-flex justify-content-between">
+                    <h4><i class="fas fa-boxes"></i> Товары ТМП на складе</h4>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="select-all">
+                        <label class="form-check-label" for="select-all">Выбрать все</label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th width="50px"></th>
+                                <th>Название</th>
+                                <th>Клиент</th>
+                                <th>Вес/Кол-во</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="product_ids" value="{{ product.id }}" 
+                                           class="product-checkbox">
+                                </td>
+                                <td>{{ product.name }}</td>
+                                <td>{{ product.client.full_name }}</td>
+                                <td>
+                                    {% if product.quantity_kg %}{{ product.quantity_kg }} кг{% endif %}
+                                    {% if product.quantity_units %}{{ product.quantity_units }} шт{% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center">Нет товаров для перемещения</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно выбора кассы -->
+    <div class="modal fade" id="selectCashboxModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Выберите кассу</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <select name="cashbox" class="form-select">
+                        {% for cashbox in cashboxes %}
+                        <option value="{{ cashbox.id }}">{{ cashbox.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Переместить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Активация кнопки при выборе товаров
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.product-checkbox');
+    const selectAll = document.getElementById('select-all');
+    const moveBtn = document.getElementById('move-selected-btn');
+    
+    // Выбрать/снять все
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateMoveButton();
+    });
+    
+    // Обновление кнопки
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateMoveButton);
+    });
+    
+    function updateMoveButton() {
+        const checked = document.querySelectorAll('.product-checkbox:checked');
+        moveBtn.disabled = checked.length === 0;
+    }
+});
+</script>
+{% endblock %}

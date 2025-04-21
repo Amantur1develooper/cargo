@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h3><i class="fas fa-user"></i> {{ client.full_name }}</h3>
+            </div>
+            <div class="card-body">
+                <p><strong>Город:</strong> {{ client.city }}</p>
+                <p><strong>Телефон:</strong> <a href="tel:{{ client.phone }}">{{ client.phone }}</a></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h3><i class="fas fa-chart-pie"></i> Статистика</h3>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-6">
+                        <div class="alert alert-primary">
+                            <h5>Всего товаров</h5>
+                            <h2>{{ stats.total }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-warning">
+                            <h5>Ждут оплаты</h5>
+                            <h2>{{ stats.awaiting_payment }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-success">
+                            <h5>Продано</h5>
+                            <h2>{{ stats.sold }}</h2>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="alert alert-danger">
+                            <h5>Долг ($)</h5>
+                            <h2>{{ stats.debt }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Таблица товаров -->
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <h3><i class="fas fa-boxes"></i> Товары клиента</h3>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Товар</th>
+                    <th>Статус</th>
+                    <th>Касса</th>
+                    <th>Цена ($)</th>
+                    <th>Дата</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.name }}</td>
+                    <td>
+                        <span class="badge bg-{% if product.status == 'sold' %}success{% elif product.status == 'kassa' %}warning{% else %}info{% endif %}">
+                            {{ product.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ product.cashbox.name|default:"-" }}</td>
+                    <td>{{ product.total_price|default:"-" }}</td>
+                    <td>{{ product.cargo_group.date|date:"d.m.Y" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center">Нет товаров</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Кнопка назад -->
+<a href="{% url 'client_list' %}" class="btn btn-secondary mt-3">
+    <i class="fas fa-arrow-left"></i> Назад к списку
+</a>
+{% endblock %}

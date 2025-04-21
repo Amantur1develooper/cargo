@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0">Детали товара #{{ product.id }}</h2>
+                <span class="badge bg-{% if product.status == 'sold' %}success{% elif product.status == 'way' %}warning{% else %}info{% endif %}">
+                    {{ product.get_status_display }}
+                </span>
+            </div>
+        </div>
+        
+        <div class="card-body">
+            <div class="row">
+                <!-- Основная информация -->
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <h4 class="text-primary border-bottom pb-2">Основная информация</h4>
+                        <dl class="row">
+                            <dt class="col-sm-4">Наименование:</dt>
+                            <dd class="col-sm-8">{{ product.name }}</dd>
+                            
+                            <dt class="col-sm-4">Клиент:</dt>
+                            <dd class="col-sm-8">
+                                <a href="#" class="text-decoration-none">{{ product.client.full_name }}</a>
+                                <br><small class="text-muted">{{ product.client.phone }}</small>
+                            </dd>
+                            
+                            <dt class="col-sm-4">Категория:</dt>
+                            <dd class="col-sm-8">
+                                {% if product.category %}
+                                <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                {% else %}
+                                <span class="text-muted">Не указана</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Касса:</dt>
+                            <dd class="col-sm-8">
+                                {% if product.cashbox %}
+                                <i class="bi bi-cash-stack"></i> {{ product.cashbox.name }}
+                                {% else %}
+                                <span class="text-muted">Не назначена</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                <!-- Количественные данные -->
+                <div class="col-md-6">
+                    <div class="mb-4">
+                        <h4 class="text-primary border-bottom pb-2">Параметры</h4>
+                        <dl class="row">
+                            <dt class="col-sm-4">Упаковка:</dt>
+                            <dd class="col-sm-8">{{ product.packaging|default:"-" }}</dd>
+                            
+                            <dt class="col-sm-4">Кол-во мест:</dt>
+                            <dd class="col-sm-8">{{ product.quantity_places }}</dd>
+                            
+                            <dt class="col-sm-4">Вес (кг):</dt>
+                            <dd class="col-sm-8">
+                                {{ product.quantity_kg|default:"-" }}
+                                {% if product.quantity_kg and product.price %}
+                                <span class="text-muted ms-2">(${{ product.total_price|floatformat:2 }})</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Цена ($):</dt>
+                            <dd class="col-sm-8">{{ product.price|default:"-"|floatformat:2 }}</dd>
+                            
+                            <dt class="col-sm-4">Пломба:</dt>
+                            <dd class="col-sm-8">
+                                {% if product.plomb_number %}
+                                <span class="badge bg-light text-dark">{{ product.plomb_number }}</span>
+                                {% else %}
+                                <span class="text-muted">Нет</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Дополнительная информация -->
+            <div class="row mt-2">
+                <div class="col-12">
+                    <div class="border-top pt-3">
+                        <h4 class="text-primary border-bottom pb-2">Дополнительно</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Рейс</h5>
+                                        <p class="card-text">
+                                            <i class="bi bi-truck"></i> {{ product.cargo_group.vehicle_number }}<br>
+                                            <small class="text-muted">Рейс #{{ product.cargo_group.trip_number }}</small>
+                                        </p>
+                                        <p class="card-text">
+                                            <i class="bi bi-calendar"></i> {{ product.cargo_group.date|date:"d.m.Y" }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            {% if product.status == 'sold' %}
+                            <div class="col-md-4">
+                                <div class="card bg-success text-white mb-3">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Продажа</h5>
+                                        <p class="card-text">
+                                            <i class="bi bi-currency-dollar"></i> {{ product.total_price|floatformat:2 }}<br>
+                                            <small>Цена: ${{ product.price|floatformat:2 }}/кг</small>
+                                        </p>
+                                        {% if product.sale_date %}
+                                        <p class="card-text">
+                                            <i class="bi bi-calendar-check"></i> {{ product.sale_date|date:"d.m.Y" }}
+                                        </p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+                            
+                         
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+    }
+    .card-header {
+        border-radius: 10px 10px 0 0 !important;
+    }
+    dt {
+        font-weight: 500;
+        color: #6c757d;
+    }
+    .badge {
+        font-size: 0.85em;
+        padding: 5px 10px;
+    }
+</style>
+{% endblock %}

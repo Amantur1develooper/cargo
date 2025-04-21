@@ -1,0 +1,191 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Заголовок и навигация -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-truck"></i> Рейс: {{ cargo_group.trip_number }}
+            <small class="text-muted">{{ cargo_group.date|date:"d.m.Y" }}</small>
+        </h2>
+        <a href="{% url 'cargo_group_list' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Назад к рейсам
+        </a>
+    </div>
+
+    <!-- Карточка с основной информацией -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5><i class="fas fa-info-circle"></i> Основная информация</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <p><strong>Номер машины:</strong> {{ cargo_group.vehicle_number }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Дата поставки:</strong> {{ cargo_group.date|date:"d.m.Y" }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p><strong>Товаров в рейсе:</strong> {{ cargo_group.products.count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Блок экспорта отчетов -->
+    <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+            <h5><i class="fas fa-file-excel"></i> Экспорт отчетов</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <a href="{% url 'export_cargo_report' cargo_group.id %}?status=all" 
+                       class="btn btn-outline-primary w-100">
+                        <i class="fas fa-list"></i> Полный отчет
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="{% url 'export_cargo_report' cargo_group.id %}?status=sold" 
+                       class="btn btn-outline-success w-100">
+                        <i class="fas fa-check-circle"></i> Проданные
+                    </a>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <a href="{% url 'export_cargo_report' cargo_group.id %}?status=unsold" 
+                       class="btn btn-outline-warning w-100">
+                        <i class="fas fa-box-open"></i> Не проданные
+                    </a>
+                </div>
+            </div>
+
+            <!-- Форма с дополнительными фильтрами -->
+            <form method="get" action="{% url 'export_cargo_report' cargo_group.id %}" class="mt-2">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Статус товаров</label>
+                        <select name="status" class="form-select">
+                            <option value="all">Все товары</option>
+                            <option value="sold">Только проданные</option>
+                            <option value="unsold">Только не проданные</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Категория</label>
+                        <select name="category" class="form-select">
+                            <option value="">Все категории</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}">{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-download"></i> Скачать с фильтрами
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Таблица товаров в рейсе -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-boxes"></i> Товары в рейсе</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm">
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Клиент</th>
+                            <th>Товар</th>
+                            <th>Категория</th>
+                            <th class="text-end">Вес (кг)</th>
+                            <th class="text-end">Цена ($)</th>
+                            <th class="text-end">Сумма ($)</th>
+                            <th>Статус</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in cargo_group.products.all %}
+                        <tr>
+                            <td>{{ product.id }}</td>
+                            <td>
+                                <a href="{% url 'client_detail' product.client.id %}">
+                                    {{ product.client.full_name }}
+                                </a>
+                            </td>
+                            <td>{{ product.name }}</td>
+                            <td>
+                                {% if product.category %}
+                                <span class="badge bg-secondary">{{ product.category.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">{{ product.quantity_kg|floatformat:2 }}</td>
+                            <td class="text-end">{{ product.price|floatformat:2 }}</td>
+                            <td class="text-end fw-bold">{{ product.total_price|floatformat:2 }}</td>
+                            <td>
+                                <span class="badge 
+                                    {% if product.status == 'sold' %}bg-success
+                                    {% elif product.status == 'kassa' %}bg-warning
+                                    {% else %}bg-info{% endif %}">
+                                    {{ product.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'product_detail' product.id %}" 
+                                   class="btn btn-sm btn-outline-primary" title="Подробнее">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center py-4">Нет товаров в этом рейсе</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Статистика по рейсу -->
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h5>Общий вес</h5>
+                    <p class="h3">{{ total_weight|default:0|floatformat:2 }} кг</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h5>Общая стоимость</h5>
+                    <p class="h3">{{ total_sum|default:0|floatformat:2 }} $</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-light">
+                <div class="card-body text-center">
+                    <h5>Статусы</h5>
+                    <div>
+                        <span class="badge bg-success">Продано: {{ sold_count }}</span>
+                        <span class="badge bg-warning">На кассе: {{ kassa_count }}</span>
+                        <span class="badge bg-info">На складе: {{ sklad_count }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

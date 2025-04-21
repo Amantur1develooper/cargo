@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+
+{% block content %}
+{% for item in cashboxes %}
+
+<a href="{% url 'cashbox_detail' item.id %}">
+    <button type="submit" class="btn btn-primary me-2">
+       {{item.name}}
+    </button></a>
+{% endfor %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 mb-0">
+                <i class="bi bi-tags me-2"></i>Категория: {{ category.name }}
+            </h1>
+          
+        </div>
+        
+<a href="{% url 'category_cashboxes' category.name %}">
+    <button type="submit" class="btn btn-primary me-2">
+     перенос на кассу
+    </button></a>
+       
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Товары ({{ products.count }})</h5>
+                <div class="d-flex">
+                    <div class="input-group input-group-sm me-2" style="width: 200px;">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Поиск...">
+                    </div>
+                    <select class="form-select form-select-sm" style="width: 150px;">
+                        <option selected>Все статусы</option>
+                        <option value="sklad">На складе</option>
+                        <option value="way">В пути</option>
+                        <option value="sold">Продано</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="30%">Товар</th>
+                            <th width="20%">Клиент</th>
+                            <th width="15%">Параметры</th>
+                            <th width="15%">Стоимость</th>
+                            <th width="15%">Статус</th>
+                            <th width="5%"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for product in products %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-0">{{ product.name }}</h6>
+                                        <small class="text-muted">#{{ product.id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                   
+                                    <div>
+                                        <h6 class="mb-0">{{ product.client.full_name }}</h6>
+                                        <small class="text-muted">{{ product.client.phone }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-semibold">{{ product.quantity_kg|default:"-" }} кг</span>
+                                    <small class="text-muted">{{ product.quantity_places }} мест</small>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-semibold">${{ product.price|default:"-" }}</span>
+                                    <small class="text-success">${{ product.total_price|default:"0" }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if product.status == 'sold' %}success{% elif product.status == 'way' %}warning{% else %}info{% endif %}">
+                                    {{ product.get_status_display }}
+                                </span>
+                                {% if product.sale_date %}
+                                <div class="text-muted small mt-1">
+                                    <i class="bi bi-calendar me-1"></i>{{ product.sale_date|date:"d.m.Y" }}
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-link text-dark" type="button" 
+                                            data-bs-toggle="dropdown">
+                                        <i class="bi bi-three-dots-vertical"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="bi bi-eye me-2"></i>Просмотр
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#">
+                                                <i class="bi bi-pencil me-2"></i>Редактировать
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="#">
+                                                <i class="bi bi-trash me-2"></i>Удалить
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="bi bi-box text-muted" style="font-size: 2rem;"></i>
+                                    <h5 class="mt-3 text-muted">Товаров не найдено</h5>
+                                    <a href="#" class="btn btn-sm btn-outline-primary mt-2">
+                                        <i class="bi bi-plus-circle"></i> Добавить товар
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <div class="text-muted">
+                    Показано {{ products.count }} из {{ products.count }} товаров
+                </div>
+                <nav aria-label="Page navigation">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Назад</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Вперед</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .table th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    .badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+    .breadcrumb {
+        background-color: transparent;
+        padding: 0;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+</style>
+{% endblock %}

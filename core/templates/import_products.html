@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="fas fa-file-import"></i> Импорт товаров из Excel</h3>
+        </div>
+        <div class="card-body">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{% if message.tags %}{{ message.tags }}{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">{{ form.excel_file.label }}</label>
+                    {{ form.excel_file }}
+                    {% if form.excel_file.errors %}
+                        <div class="text-danger">{{ form.excel_file.errors }}</div>
+                    {% endif %}
+                    <small class="text-muted">Формат: .xlsx или .xls</small>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.trip_number.label }}</label>
+                        {{ form.trip_number }}
+                        {% if form.trip_number.errors %}
+                            <div class="text-danger">{{ form.trip_number.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.vehicle_number.label }}</label>
+                        {{ form.vehicle_number }}
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">{{ form.date.label }}</label>
+                        {{ form.date }}
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-upload"></i> Импортировать
+                </button>
+            </form>
+            
+            <div class="mt-4">
+                <h5>Требования к Excel файлу:</h5>
+                <ul>
+                    <li>Обязательные колонки: <strong>ФИО, Наименование, кг, Цена $</strong></li>
+                    <li>Дополнительные колонки: Телефон, Город, Упак, шт, Сумма $, Йул кира $, Пломба, УЗБ $</li>
+                    <li>Первая строка - заголовки</li>
+                </ul>
+                
+                <a href="{% url 'download_example' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-download"></i> Скачать пример файла
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,181 @@
+
+    <style>
+        body {
+            font-family: DejaVu Sans, sans-serif;
+            margin: 40px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 6px;
+            text-align: center;
+        }
+        .no-border td {
+            border: none;
+        }
+        .print-button {
+            margin-bottom: 20px;
+        }
+        h2 {
+            text-align: center;
+        }
+    </style>
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Накладная со склада</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        th, td {
+            border: 1px solid #333;
+            padding: 3chpx;
+            text-align: center;
+        }
+        h2 {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<h2>Накладная со склада</h2>
+
+{% if products %}
+    {% with first=products.first %}
+    <table>
+        <tr>
+            <td><strong>Рейс:</strong> {{ first.cargo_group.trip_number }}</td>
+            <td><strong>Телефон:</strong> {{ first.client.phone }}</td>
+            <td colspan="2"><strong>Наименование клиента:</strong> {{ first.client.full_name }}</td>
+        </tr>
+    </table>
+    {% endwith %}
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+          
+            <th>Клиент</th>
+            <th>Товар</th>
+            <th>Мест</th>
+            <th>Упак</th>
+            <th>Вес (кг)</th>
+            <th>Цена за кг ($)</th>
+            <th>Сумма ($)</th>
+            <th>Жол кира</th>
+            <th>Машина</th>
+            <th>Дата</th>
+            <th>курс к $</th>
+            <th>сом</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for product in products %}
+        <tr>
+           
+            <td>{{ product.client.full_name }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.quantity_places }}</td>
+            <td>{{product.packaging}}</td>
+            <td>{{ product.quantity_kg }}</td>
+            <td>{{ product.price }}</td>
+
+            <td>{{ product.total_price }}</td>
+            <td>{{product.transport_cost}}</td>
+            <td>{{ product.cargo_group.vehicle_number }}</td>
+            <td>{{ product.cargo_group.date }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table>
+    <tr>
+        <td><strong>Итого ($):</strong></td>
+        <td>{{ total_usd }}</td>
+    </tr>
+    
+</table>
+
+<p><strong>Подпись получателя денег:</strong> ___________________________</p>
+
+<p><strong>Подпись получателя товара:</strong> ___________________________</p>
+<h2>Накладная со склада</h2>
+
+{% if products %}
+    {% with first=products.first %}
+    <table>
+        <tr>
+            <td><strong>Рейс:</strong> {{ first.cargo_group.trip_number }}</td>
+            <td><strong>Телефон:</strong> {{ first.client.phone }}</td>
+            <td colspan="2"><strong>Наименование клиента:</strong> {{ first.client.full_name }}</td>
+        </tr>
+    </table>
+    {% endwith %}
+{% endif %}
+
+<table>
+    <thead>
+        <tr>
+          
+            <th>Клиент</th>
+            <th>Товар</th>
+            <th>Мест</th>
+            <th>Упак</th>
+            <th>Вес (кг)</th>
+            <th>Цена за кг ($)</th>
+            <th>Сумма ($)</th>
+            <th>Жол кира</th>
+            <th>Машина</th>
+            <th>Дата</th>
+            <th>курс к $</th>
+            <th>сом</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for product in products %}
+        <tr>
+           
+            <td>{{ product.client.full_name }}</td>
+            <td>{{ product.name }}</td>
+            <td>{{ product.quantity_places }}</td>
+            <td>{{product.packaging}}</td>
+            <td>{{ product.quantity_kg }}</td>
+            <td>{{ product.price }}</td>
+
+            <td>{{ product.total_price }}</td>
+            <td>{{product.transport_cost}}</td>
+            <td>{{ product.cargo_group.vehicle_number }}</td>
+            <td>{{ product.cargo_group.date }}</td>
+            <td></td>
+            <td></td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+<table>
+    <tr>
+        <td><strong>Итого ($):</strong></td>
+        <td>{{ total_usd }}</td>
+    </tr>
+    
+</table>
+
+<p><strong>Подпись получателя денег:</strong> ___________________________</p>
+
+<p><strong>Подпись получателя товара:</strong> ___________________________</p>
+
+</body>
+</html>
