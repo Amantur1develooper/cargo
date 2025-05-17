@@ -71,7 +71,33 @@ from .models import Product, ProductCategory
 from core.forms import ProductFilterForm, AssignCategoryForm
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
 
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
+
+def login_view(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')  # Замените на вашу домашнюю страницу
+        else:
+            messages.error(request, "Неверное имя пользователя или пароль.")
+
+    return render(request, 'login.html')
+
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')  # После выхода отправляем на страницу входа
+
+@login_required(login_url='/login/')
 @require_POST
 def clear_products_category(request):
     product_ids = request.POST.getlist('product_ids')
@@ -100,7 +126,7 @@ from django.contrib import messages
 from .models import Product, ProductCategory
 from .forms import ProductFilterForm, AssignCategoryForm
 
-
+@login_required(login_url='/login/')
 def products_in_stock_view(request):
     form = ProductFilterForm(request.GET or None)
     products = Product.objects.filter(status='sklad').select_related('client', 'cargo_group', 'category')
@@ -210,6 +236,8 @@ def products_in_stock_view(request):
     }
     return render(request, 'products_in_stock.html', context)
 
+
+@login_required(login_url='/login/')
 def export_products_in_stock(request):
     products = Product.objects.filter(status='sklad').select_related('client', 'cargo_group')
     
@@ -356,7 +384,7 @@ def export_products_in_stock(request):
 # views.py
 
 from .models import Currency
-
+@login_required(login_url='/login/')
 def generate_invoice(request):
     ids = request.GET.get('ids')
     id_list = ids.split(',') if ids else []
@@ -417,6 +445,7 @@ from django.db.models import Sum, Q, Count
 from django.db.models.functions import Coalesce, TruncDay
 from django.db.models import DecimalField
 from decimal import Decimal
+@login_required(login_url='/login/')
 def dashboard(request):
     # 1. Основные финансовые показатели (включая изъятия)
     cash_data = CashTransaction.objects.aggregate(
@@ -553,6 +582,8 @@ def dashboard(request):
     })
     
     return render(request, 'dashboard/new_dashboard.html', context)
+
+@login_required(login_url='/login/')
 def get_context_data(self, **kwargs):
     context = super().get_context_data(**kwargs)
     context['sold_products'] = Product.objects.filter(status='sold').count()
@@ -568,7 +599,7 @@ from django.shortcuts import render, get_object_or_404
 from django.db.models import Sum, Count, Q
 from django.core.paginator import Paginator
 from .models import ProductCategory, Product
-
+@login_required(login_url='/login/')
 def products_by_category(request, category_name):
     # Получаем категорию (без prefetch_related, так как это ForeignKey в Product)
     cashboxes = CashBox.objects.filter(category__name=category_name)
@@ -623,6 +654,8 @@ def products_by_category(request, category_name):
 from django.views.decorators.http import require_POST
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
+
+@login_required(login_url='/login/')
 def category_cashboxes(request, category_name):
     category = get_object_or_404(ProductCategory, name__iexact=category_name)
     cashboxes = CashBox.objects.filter(category=category)
@@ -634,7 +667,9 @@ def category_cashboxes(request, category_name):
         'products': products,
         'ProductCategory':ProductCategory.objects.all()
     })
-
+    
+    
+@login_required(login_url='/login/')
 @require_POST
 def move_products_to_cashbox(request):
     cashbox_id = request.POST.get('cashbox')
@@ -659,6 +694,8 @@ from django.contrib import messages
 # views.pyfrom django.utils import timezone
 from decimal import Decimal
 
+
+@login_required(login_url='/login/')
 def cashbox_detail(request, cashbox_id):
     cashbox = get_object_or_404(CashBox, id=cashbox_id)
     products = Product.objects.filter(cashbox=cashbox, status='kassa')
@@ -721,11 +758,15 @@ def cashbox_detail(request, cashbox_id):
         'products_with_debt': products_with_debt,
         'current_currency': current_currency,
     })
-
+    
+    
+@login_required(login_url='/login/')
 @require_POST
 def sell_product(request, product_id):
     product = get_object_or_404(Product, id=product_id)
     
+    if product.plomb_number == '':
+        product.plomb_number = None  # или 0, или другое значение по умолчанию
     # Обновляем статус и дату продажи
     product.status = 'sold'
     product.sale_date = timezone.now()
@@ -745,6 +786,8 @@ def sell_product(request, product_id):
     messages.success(request, f'Товар "{product.name}" успешно продан!')
     return redirect('cashbox_detail', cashbox_id=product.cashbox.id)
 
+
+@login_required(login_url='/login/')
 @require_POST
 def return_to_warehouse(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -764,6 +807,8 @@ from django.db.models import Sum, Avg, Q
 from django.contrib import messages
 from datetime import datetime
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+
+@login_required(login_url='/login/')
 def sales_report(request):
     # Начальный QuerySet
     sales = CashTransaction.objects.filter(type='income').order_by('-created_at')
@@ -802,7 +847,8 @@ def sales_report(request):
     avg_amount = sales.aggregate(avg=Avg('amount'))['avg'] or 0
     
     # Пагинация
-    paginator = Paginator(sales, 25)  # 25 записей на страницу
+    salse2 = sales
+    paginator = Paginator(sales, 20)  # 25 записей на страницу
     page_number = request.GET.get('page')
     try:
         sales = paginator.page(page_number)
@@ -813,16 +859,179 @@ def sales_report(request):
     
     context = {
         'sales': sales,
+        'seles2':len(salse2),
         'total_amount': total_amount,
         'avg_amount': avg_amount,
     }
     
     return render(request, 'reports/sales.html', context)
 
+from django.http import HttpResponse
+from openpyxl import Workbook
+from openpyxl.styles import Font, Alignment, Border, Side
+from openpyxl.utils import get_column_letter
 
+@login_required(login_url='/login/')
+def export_sales_report(request):
+    # Копируем логику фильтрации из sales_report
+    sales = CashTransaction.objects.filter(type='income').order_by('-created_at')
+    
+    # Фильтрация
+    start_date = request.GET.get('start_date')
+    end_date = request.GET.get('end_date')
+    search_query = request.GET.get('search', '').strip()
+    
+    if start_date:
+        sales = sales.filter(created_at__date__gte=start_date)
+    if end_date:
+        sales = sales.filter(created_at__date__lte=end_date)
+    if search_query:
+        sales = sales.filter(
+            Q(client__full_name__icontains=search_query) |
+            Q(product__name__icontains=search_query) |
+            Q(description__icontains=search_query) |
+            Q(cashbox__name__icontains=search_query)
+        )
+    
+    # Создаем Excel файл
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Отчет о продажах"
+    
+    # Стили
+    from openpyxl.styles import (
+        Font, Alignment, Border, Side, 
+        PatternFill, numbers
+    )
+    
+    header_fill = PatternFill(start_color='4F81BD', end_color='4F81BD', fill_type='solid')
+    header_font = Font(color='FFFFFF', bold=True)
+    alignment_center = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    alignment_left = Alignment(horizontal='left', vertical='center', wrap_text=True)
+    thin_border = Border(
+        left=Side(style='thin'), 
+        right=Side(style='thin'), 
+        top=Side(style='thin'), 
+        bottom=Side(style='thin')
+    )
+    money_format = '#,##0.00 $'
+    date_format = 'dd.mm.yyyy hh:mm'
+    
+    # Ширина столбцов
+    column_dimensions = [
+        ('Дата и время', 20),
+        ('Сумма', 15),
+        ('Клиент', 25),
+        ('Товар/Услуга', 30),
+        ('Касса', 20),
+        ('Описание', 40),
+        ('Менеджер', 25),
+    ]
+    
+    # Заголовок отчета
+    ws.merge_cells('A1:G1')
+    title_cell = ws['A1']
+    title_cell.value = "ОТЧЕТ О ПРОДАЖАХ"
+    title_cell.font = Font(size=16, bold=True)
+    title_cell.alignment = Alignment(horizontal='center')
+    
+    # Период отчета
+    if start_date or end_date:
+        period = "Период: "
+        period += f"с {start_date}" if start_date else ""
+        period += " по " if start_date and end_date else ""
+        period += f"{end_date}" if end_date else ""
+        
+        ws.merge_cells('A2:G2')
+        period_cell = ws['A2']
+        period_cell.value = period
+        period_cell.font = Font(bold=True)
+        period_cell.alignment = Alignment(horizontal='left')
+        start_row = 4
+    else:
+        start_row = 3
+    
+    # Заголовки столбцов
+    for col_num, (column_title, column_width) in enumerate(column_dimensions, 1):
+        col_letter = get_column_letter(col_num)
+        ws.column_dimensions[col_letter].width = column_width
+        
+        cell = ws.cell(row=start_row, column=col_num, value=column_title)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = alignment_center
+        cell.border = thin_border
+    
+    # Данные
+    for row_num, sale in enumerate(sales, start_row + 1):
+        # Удаляем временную зону из datetime
+        naive_datetime = sale.created_at.replace(tzinfo=None) if sale.created_at.tzinfo else sale.created_at
+        
+        ws.cell(row=row_num, column=1, value=naive_datetime).number_format = date_format
+        ws.cell(row=row_num, column=2, value=float(sale.amount)).number_format = money_format
+        ws.cell(row=row_num, column=3, value=sale.client.full_name if sale.client else 'Не указан')
+        ws.cell(row=row_num, column=4, value=sale.product.name if sale.product else 'Не указан')
+        ws.cell(row=row_num, column=5, value=str(sale.cashbox) if sale.cashbox else 'Не указана')
+        ws.cell(row=row_num, column=6, value=sale.description or '')
+        ws.cell(row=row_num, column=7, value=sale.created_by.get_full_name() or sale.created_by.username)
+        
+        # Применяем стили
+        for col in range(1, 8):
+            cell = ws.cell(row=row_num, column=col)
+            cell.alignment = alignment_left
+            cell.border = thin_border
+    
+    # Итоги
+    total_amount = sales.aggregate(total=Sum('amount'))['total'] or 0
+    avg_amount = sales.aggregate(avg=Avg('amount'))['avg'] or 0
+    count = sales.count()
+    
+    summary_row = row_num + 2
+    
+    # Стиль для итогов
+    summary_fill = PatternFill(start_color='D9E1F2', end_color='D9E1F2', fill_type='solid')
+    summary_font = Font(bold=True)
+    
+    # Заголовок итогов
+    ws.merge_cells(f'A{summary_row}:B{summary_row}')
+    ws.cell(row=summary_row, column=1, value="ИТОГО:").font = summary_font
+    
+    # Данные итогов
+    summary_data = [
+        ("Общая сумма:", total_amount, money_format),
+        ("Количество продаж:", count, '0'),
+        ("Средний чек:", avg_amount, money_format),
+    ]
+    
+    for i, (label, value, num_format) in enumerate(summary_data, 1):
+        row = summary_row + i
+        ws.cell(row=row, column=1, value=label).font = summary_font
+        ws.cell(row=row, column=2, value=value).number_format = num_format
+        ws.cell(row=row, column=2).font = summary_font
+        
+        # Заливка и границы
+        for col in [1, 2]:
+            cell = ws.cell(row=row, column=col)
+            cell.fill = summary_fill
+            cell.border = thin_border
+    
+    # Автофильтр
+    ws.auto_filter.ref = f"A{start_row}:G{row_num}"
+    
+    # Замораживаем заголовки
+    ws.freeze_panes = f"A{start_row + 1}"
+    
+    # Создаем HTTP ответ
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers={'Content-Disposition': 'attachment; filename="sales_report.xlsx"'},
+    )
+    wb.save(response)
+    
+    return response
 # views.py
 from django.db.models import Count, Sum
-
+@login_required(login_url='/login/')
 def client_list(request):
     clients = Client.objects.annotate(
         product_count=Count('products'),
@@ -832,6 +1041,8 @@ def client_list(request):
     
     return render(request, 'clients/client_list.html', {'clients': clients})
 
+
+@login_required(login_url='/login/')
 def client_detail(request, client_id):
     client = get_object_or_404(Client, id=client_id)
     products = client.products.all()
@@ -850,6 +1061,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from datetime import datetime
 
+
+
+@login_required(login_url='/login/')
 def export_categories_report(request):
     # Создаем Excel-файл
     wb = Workbook()
@@ -918,6 +1132,9 @@ def export_categories_report(request):
     wb.save(response)
     return response
 from openpyxl.styles import PatternFill
+
+
+@login_required(login_url='/login/')
 def export_cashboxes_report(request):
     wb = Workbook()
     ws = wb.active
@@ -1165,6 +1382,8 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime
 from django.db.models import Sum
 
+
+@login_required(login_url='/login/')
 def export_cashbox_detail(request, cashbox_id):
     cashbox = get_object_or_404(CashBox, id=cashbox_id)
     
@@ -1264,7 +1483,7 @@ def export_cashbox_detail(request, cashbox_id):
     if products.exists():
         total_row = [
             "Итого:", "", "", "", "", "", "", "",
-            sum(p.quantity_places or 0 for p in products),
+            0,#sum(p.quantity_places or 0 for p in products)
             sum(p.quantity_kg or 0 for p in products),
             sum(p.quantity_units or 0 for p in products),
             "",
@@ -1417,7 +1636,7 @@ def export_cashbox_detail(request, cashbox_id):
 #         ])
    
    
-
+@login_required(login_url='/login/')
 def product_detail(request, pk):
     product = get_object_or_404(Product.objects.select_related(
         'client', 'category', 'cashbox', 'cargo_group'

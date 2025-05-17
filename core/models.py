@@ -64,7 +64,7 @@ class Product(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='products')
     name = models.CharField("Наименование товара", max_length=255)
     packaging = models.CharField("Упаковка", max_length=50, blank=True, null=True)
-    quantity_places = models.PositiveIntegerField("Количество мест", default=1)
+    quantity_places = models.CharField(max_length=100, blank=True, null=True, verbose_name="Количество мест", default=0)
     quantity_kg = models.FloatField("Вес (кг)",default=0, null=True, blank=True)
     quantity_units = models.PositiveIntegerField("Количество (шт)", default=0, null=True, blank=True)
     price = models.FloatField("Цена за единицу ($)", null=True, blank=True)
@@ -94,10 +94,9 @@ class Product(models.Model):
 
         if self.transport_cost != 0:
             total += self.transport_cost
-
-        if self.plomb_number != 0:
-            total += self.plomb_number
-
+            
+            
+            
         self.total_price = total
         super().save(*args, **kwargs)
 

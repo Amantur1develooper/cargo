@@ -80,97 +80,106 @@ def import_products(request):
                 for col in numeric_cols:
                     df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
                 
-                with transaction.atomic():
-                    # Создаем грузовую группу
-                    cargo_group, created = CargoGroup.objects.get_or_create(
-                        trip_number=trip_number,
-                        defaults={
-                            'vehicle_number': vehicle_number,
-                            'date': datetime.strptime(date, '%d.%m.%Y').date() if isinstance(date, str) else date
-                        }
-                    )
-                    
-                    clients_without_phone = []
-                    imported_products = 0
-                    
-                    for _, row in df.iterrows():
-                        try:
-                            phone = str(row['Телефон']).strip()
-                            full_name = str(row['ФИО']).strip()
-                            
-                            if not full_name:
+                # Обработка поля Пломба - заменяем пустые значения на 0
+                df['Пломба'] = pd.to_numeric(df['Пломба'], errors='coerce').fillna(0)
+                
+                try:
+                    with transaction.atomic():
+                        # Создаем грузовую группу
+                        cargo_group, created = CargoGroup.objects.get_or_create(
+                            trip_number=trip_number,
+                            defaults={
+                                'vehicle_number': vehicle_number,
+                                'date': datetime.strptime(date, '%d.%m.%Y').date() if isinstance(date, str) else date
+                            }
+                        )
+                        
+                        clients_without_phone = []
+                        imported_products = 0
+                        
+                        for _, row in df.iterrows():
+                            try:
+                                phone = str(row['Телефон']).strip()
+                                full_name = str(row['ФИО']).strip()
+                                
+                                if not full_name:
+                                    continue
+                                
+                                # Обработка клиента
+                                if phone and phone != 'nan':
+                                    client, _ = Client.objects.get_or_create(
+                                        phone=phone,
+                                        defaults={
+                                            'full_name': full_name,
+                                            'city': row['Город'],
+                                            'no_phone': False
+                                        }
+                                    )
+                                else:
+                                    # Ищем клиента только по ФИО и городу, если нет телефона
+                                    client, created = Client.objects.get_or_create(
+                                        full_name=full_name,
+                                        city=row['Город'],
+                                        phone=None,
+                                        defaults={'no_phone': True}
+                                    )
+                                    if created:
+                                        clients_without_phone.append(client)
+                                
+                                # Обработка веса
+                                weight = row['кг']
+                                if isinstance(weight, str) and '=' in weight:
+                                    try:
+                                        weight = eval(weight.replace('=', '').replace('+', ' ').split()[0])
+                                    except:
+                                        weight = 0
+                                
+                                # Обработка транспортных расходов
+                                transport_cost = row['Йул кира $']
+                                if isinstance(transport_cost, str) and '=' in transport_cost:
+                                    try:
+                                        transport_cost = eval(transport_cost.replace('=', ''))
+                                    except:
+                                        transport_cost = 0
+                                
+                                # Создаем товар
+                                Product.objects.create(
+                                    cargo_group=cargo_group,
+                                    client=client,
+                                    name=row['Наименование'],
+                                    packaging=row['Упак'],
+                                    quantity_places=row['шт'] if pd.notna(row['шт']) else 1,
+                                    quantity_kg=weight,
+                                    price=row['Цена $'],
+                                    total_price=row['Сумма $'] if row['Сумма $'] else weight * row['Цена $'],
+                                    transport_cost=transport_cost,
+                                    plomb_number=int(row['Пломба']),  # Преобразуем в целое число
+                                    uzb_price=row['УЗБ $']
+                                )
+                                imported_products += 1
+                                
+                            except Exception as e:
+                                messages.warning(request, f"Ошибка обработки строки {row['№']}: {str(e)}")
                                 continue
-                            
-                            # Обработка клиента
-                            if phone and phone != 'nan':
-                                client, _ = Client.objects.get_or_create(
-                                    phone=phone,
-                                    defaults={
-                                        'full_name': full_name,
-                                        'city': row['Город'],
-                                        'no_phone': False
-                                    }
-                                )
-                            else:
-                                # Ищем клиента только по ФИО и городу, если нет телефона
-                                client, created = Client.objects.get_or_create(
-                                    full_name=full_name,
-                                    city=row['Город'],
-                                    phone=None,
-                                    defaults={'no_phone': True}
-                                )
-                                if created:
-                                    clients_without_phone.append(client)
-                            
-                            # Обработка веса (может содержать формулы типа "=82+93")
-                            weight = row['кг']
-                            if isinstance(weight, str) and '=' in weight:
-                                try:
-                                    weight = eval(weight.replace('=', '').replace('+', ' ').split()[0])
-                                except:
-                                    weight = 0
-                            
-                            # Обработка транспортных расходов (может содержать формулы типа "=30000/12800")
-                            transport_cost = row['Йул кира $']
-                            if isinstance(transport_cost, str) and '=' in transport_cost:
-                                try:
-                                    transport_cost = eval(transport_cost.replace('=', ''))
-                                except:
-                                    transport_cost = 0
-                            
-                            # Создаем товар
-                            Product.objects.create(
-                                cargo_group=cargo_group,
-                                client=client,
-                                name=row['Наименование'],
-                                packaging=row['Упак'],
-                                quantity_places=row['шт'] if pd.notna(row['шт']) else 1,
-                                quantity_kg=weight,
-                                price=row['Цена $'],
-                                total_price=row['Сумма $'] if row['Сумма $'] else weight * row['Цена $'],
-                                transport_cost=transport_cost,
-                                plomb_number=row['Пломба'] if pd.notna(row['Пломба']) else '',
-                                uzb_price=row['УЗБ $']
-                            )
-                            imported_products += 1
-                            
-                        except Exception as e:
-                            messages.warning(request, f"Ошибка обработки строки {row['№']}: {str(e)}")
-                            continue
-                    
-                    messages.success(request, f"Успешно импортировано {imported_products} товаров в рейс {trip_number}")
-                    
-                    if clients_without_phone:
-                        request.session['clients_without_phone'] = [
-                            {'id': c.id, 'name': c.full_name, 'city': c.city} 
-                            for c in clients_without_phone
-                        ]
-                        return redirect('clients_without_phone')
-                    
-                    return redirect('cargo_group_detail', pk=cargo_group.id)
+                        
+                        messages.success(request, f"Успешно импортировано {imported_products} товаров в рейс {trip_number}")
+                        
+                        if clients_without_phone:
+                            request.session['clients_without_phone'] = [
+                                {'id': c.id, 'name': c.full_name, 'city': c.city} 
+                                for c in clients_without_phone
+                            ]
+                            return redirect('clients_without_phone')
+                        
+                        return redirect('cargo_group_detail', pk=cargo_group.id)
+                
+                except Exception as e:
+                    messages.error(request, f"Ошибка транзакции: {str(e)}")
+                    return redirect('import_products')
                     
             except Exception as e:
                 messages.error(request, f"Ошибка импорта: {str(e)}")
+                return redirect('import_products')
         else:
             messages.error(request, "Пожалуйста, исправьте ошибки в форме")
     else:

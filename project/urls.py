@@ -18,15 +18,20 @@ from core import views
 from django.contrib import admin
 from django.urls import path
 from django.conf import settings 
-from django.urls import path
 from django.conf.urls.static import static
 from core.car import cargo_group_detail, cargo_group_list, export_cargo_groups_report, export_cargo_report
 from core.import_kargo.views import clients_without_phone, download_example, import_products
 from core.views import cashbox_detail, category_cashboxes, client_detail, client_list, dashboard, export_products_in_stock, generate_invoice, move_products_to_cashbox, product_detail, products_by_category, products_in_stock_view, return_to_warehouse, sales_report, sell_product
-
+from core.views import login_view, logout_view
+from core.views import export_sales_report
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('',dashboard,name='dashboard'),
+
+
+    path('login/', login_view, name='login'),
+    path('logout/', logout_view, name='logout'),
+
     path('export/products-in-stock/', export_products_in_stock, name='export_products_in_stock'),
     path('products-in-stock/', products_in_stock_view, name='products_in_stock'),
     path('invoice/', generate_invoice, name='generate-invoice'),
@@ -43,7 +48,10 @@ urlpatterns = [
 
     
     path('sales_report/', sales_report, name='sales_report'),
-    
+
+    # ... другие URL ...
+    path('reports/sales/export/', export_sales_report, name='export_sales_report'),
+
     path('cashboxes/<str:category_name>/', category_cashboxes, name='category_cashboxes'),
     path('products/move-to-cashbox/', move_products_to_cashbox, name='move_products_to_cashbox'),
 

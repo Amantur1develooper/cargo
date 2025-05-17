@@ -10,6 +10,8 @@ from core.models import CargoGroup, Product, ProductCategory
 from openpyxl.utils import get_column_letter
 from django.db.models import Sum, Count, Q
 from openpyxl.cell import MergedCell
+from django.contrib.auth.decorators import login_required
+@login_required
 def export_cargo_report(request, cargo_group_id):
     cargo = get_object_or_404(CargoGroup, id=cargo_group_id)
     
@@ -103,7 +105,7 @@ def export_cargo_report(request, cargo_group_id):
         last_row = ws.max_row + 1
         ws.append([
             "Итого:", "", "", "", "", "",
-            sum(p.quantity_places or 0  for p in products),
+            0,#sum(p.quantity_places or 0  for p in products),
             sum(p.quantity_kg or 0 for p in products),
             sum(p.quantity_units or 0 for p in products),
             "",
@@ -159,7 +161,7 @@ def export_cargo_report(request, cargo_group_id):
 
 
 
-
+@login_required
 def cargo_group_detail(request, pk):
     cargo_group = get_object_or_404(CargoGroup.objects.prefetch_related(
         'products__client',
@@ -208,6 +210,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment
 from .models import CargoGroup
 
+@login_required
 def cargo_group_list(request):
     cargo_groups = CargoGroup.objects.annotate(
         total_weight=Sum('products__quantity_kg'),
@@ -226,6 +229,8 @@ def cargo_group_list(request):
     })
 from openpyxl.utils import get_column_letter
 from openpyxl.cell import MergedCell
+
+@login_required
 def export_cargo_groups_report(request):
     if request.method == 'POST':
         selected_groups = request.POST.getlist('selected_groups')

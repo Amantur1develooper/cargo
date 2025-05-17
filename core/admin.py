@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .models import CashBox, Client, CargoGroup, Product, FinanceOverview, Debt, CashTransaction, ProductCategory
-
+admin.site.site_header = "Админ-панель"
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):
@@ -70,16 +70,7 @@ class CashTransactionAdmin(admin.ModelAdmin):
     date_hierarchy = 'created_at'
 
 
-# admin.py
-
-from .models import Currency
-
-@admin.register(Currency)
-class CurrencyAdmin(admin.ModelAdmin):
-    list_display = ("usd_to_som", "updated_at")
-
-
-
+# admin.p
 @admin.register(CashBox)
 class CashBoxAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'category')

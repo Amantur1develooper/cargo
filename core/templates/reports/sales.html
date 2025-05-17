@@ -7,8 +7,11 @@
         <h2><i class="fas fa-chart-line"></i> Отчёт о продажах</h2>
         <div>
             {% comment %} {% url 'export_sales_report' %} {% endcomment %}
-            <a href="#" class="btn btn-success">
+            <a href="{% url 'export_sales_report' %}?{{ request.GET.urlencode }}" class="btn btn-success">
                 <i class="fas fa-file-excel"></i> Экспорт в Excel
+            </a>
+            <a href="{% url 'sales_report' %}" class="btn btn-primary">
+                </i> Сброс фильтров
             </a>
         </div>
     </div>
@@ -31,11 +34,14 @@
                     <label for="search" class="form-label">Поиск</label>
                     <input type="text" id="search" name="search" class="form-control" 
                            placeholder="Клиент, товар, описание..." value="{{ request.GET.search }}">
+                    
+
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">
                         <i class="fas fa-filter"></i> Применить
                     </button>
+                    
                 </div>
             </form>
         </div>
@@ -51,11 +57,12 @@
                 </div>
             </div>
         </div>
+        {% comment %} {{sales.count}} {% endcomment %}
         <div class="col-md-4">
             <div class="card bg-success text-white">
                 <div class="card-body">
                     <h5 class="card-title">Количество продаж</h5>
-                    <p class="card-text h4">{{ sales.count }}</p>
+                    <p class="card-text h4">{{ seles2 }}</p>
                 </div>
             </div>
         </div>
